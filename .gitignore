@@ -1,6 +1,12 @@
+.DS_Store
+
 *.m
 *.pdf
 *.png
 *.svg
 *.nb
 
+report
+images
+
+svg2png.sh

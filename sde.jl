@@ -100,7 +100,7 @@ function sde(params, T, dt0, sip0)
 end
 
 
-function run_simulation_x_times()
+function run_simulation_x_times(num_iterations)
     # param = [r k lambda mu m a theta delta]
     param = [7.0, 400.0, 0.06, 3.4, 15.5, 15.0, 10.0, 8.3]
 
@@ -113,37 +113,48 @@ function run_simulation_x_times()
     # intial time-step
     dt0 = 1e-4
 
-    num_iterations = 100
-
-    S_means = zeros(num_iterations)
-    P_means = zeros(num_iterations)
-    I_means = zeros(num_iterations)
-
-    S_vars = zeros(num_iterations)
-    P_vars = zeros(num_iterations)
-    I_vars = zeros(num_iterations)
+    S_vals = zeros(num_iterations)
+    P_vals = zeros(num_iterations)
+    I_vals = zeros(num_iterations)
 
     for i = 1:num_iterations
 
-        t, S, I, P = @time sde(param, T, dt0, sip)
+        t, S, I, P = sde(param, T, dt0, sip)
 
         # display(plot(t, [S, I, P]))
 
-        S_means[i] = mean(S)
-        I_means[i] = mean(I)
-        P_means[i] = mean(P)
+        S_vals[i] = S[end]
+        I_vals[i] = I[end]
+        P_vals[i] = P[end]
 
-        S_vars[i] = var(S)
-        I_vars[i] = var(I)
-        P_vars[i] = var(P)
     end
     
-    display(histogram(S_means, bins = 20))
-    display(histogram(I_means, bins = 20))
-    display(histogram(P_means, bins = 20))
-    display(histogram(S_vars, bins = 20))
-    display(histogram(I_vars, bins = 20))
-    display(histogram(P_vars, bins = 20))
+    S_hist = histogram(S_vals, bins = 20, legend=false)
+    title!(string("S population at t=10, ", num_iterations, " sample runs"))
+    xlabel!("Population size")
+    ylabel!("Number of runs")
+    display(S_hist)
+
+    I_hist = histogram(I_vals, bins = 20, legend=false)
+    title!(string("I population at t=10, ", num_iterations, " sample runs"))
+    xlabel!("Population size")
+    ylabel!("Number of runs")
+    display(I_hist)
+
+    P_hist = histogram(P_vals, bins = 20, legend=false)
+    title!(string("P population at t=10, ", num_iterations, " sample runs"))
+    xlabel!("Population size")
+    ylabel!("Number of runs")
+    display(P_hist)
+
+    println(string("S mean: ", mean(S_vals)))
+    println(string("I mean: ", mean(I_vals)))
+    println(string("P mean: ", mean(P_vals)))
+    println(string("S var: ", var(S_vals)))
+    println(string("I var: ", var(I_vals)))
+    println(string("P var: ", var(P_vals)))
+    
+    return mean(S_vals), mean(I_vals), mean(P_vals), var(S_vals), var(I_vals), var(P_vals)
 
 end
 
@@ -166,9 +177,9 @@ function explore_parameter_a()
         println(a)
         param[6] = float(a)
 
-        P_means = zeros(400)
+        P_means = zeros(1000)
 
-        for i = 1:400
+        for i = 1:1000
 
             _, _, _, P = sde(param, T, dt0, sip)
 
@@ -178,12 +189,24 @@ function explore_parameter_a()
         P_10[a] = mean(P_means)
     end
 
-    display(plot(1:30, P_10))
- 
+    a_plot = plot(1:30, P_10, legend=false)
+    title!("P population mean at each a")
+    xlabel!("a")
+    ylabel!("P population mean")
+    display(a_plot)
+    
+    return P_10, argmax(P_10)
 end
 
 function main()
-    explore_parameter_a()
+    P_vals, argmax_P = explore_parameter_a()
+
+    print(string("Max P pop: ", P_vals[argmax_P]))
+    print(string("Max P a value: ", argmax_P))
+
+    run_simulation_x_times(100)
+    run_simulation_x_times(1000)
+    return
 end
 
 main()
